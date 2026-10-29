@@ -1,109 +1,101 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../comp_css/Navbar.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faArrowRight,
   faCartShopping,
-  faSearch,
+  faMagnifyingGlass,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
+const categories = [
+  ["All products", "all"],
+  ["Electronics", "electronics"],
+  ["Fashion", "fashion"],
+  ["Home & living", "home"],
+  ["Fresh food", "vegetables"],
+  ["Beauty", "beauty"],
+];
+
 const Navbar = () => {
-  const iconstyle = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  };
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const userId = localStorage.getItem("userid");
+  const name = localStorage.getItem("name");
 
-  let userId = localStorage.getItem("userid");
-  let name = localStorage.getItem("name");
-
-  const handleLoginClick = () => {
-    navigate("/login");
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const query = search.trim();
+    navigate(query ? `/product?search=${encodeURIComponent(query)}` : "/product");
   };
 
-  const handleLogoutClick = () => {
-    localStorage.removeItem("userid");
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("cartid")
-    localStorage.removeItem("name")
-
-    alert("Logout Successfully.....");
+  const logout = () => {
+    ["userid", "jwtToken", "cartid", "name"].forEach((key) =>
+      localStorage.removeItem(key)
+    );
     navigate("/");
   };
 
   return (
-    <nav className="navbar">
-      <div className="logo">
-        <h3
-          onClick={() => {
-            navigate("/");
-          }}
-        >
-          E-Commerce
-        </h3>
+    <header className="store-header">
+      <div className="announcement-bar">
+        <span>GOOD FINDS FOR EVERYDAY LIVING</span>
+        <span>Thoughtful picks. Easy shopping. <FontAwesomeIcon icon={faArrowRight} /></span>
       </div>
+      <div className="navbar">
+        <button className="logo" onClick={() => navigate("/")} type="button" aria-label="ShopEase home">
+          <span className="logo-mark">s</span>
+          <span>shop<span className="logo-accent">ease</span><small>EVERYDAY, ELEVATED</small></span>
+        </button>
 
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search..."
-          onClick={() => {
-            navigate("/product");
-          }}
-        />
-        <FontAwesomeIcon icon={faSearch} className="search-icon" />
-      </div>
+        <form className="search-bar" role="search" onSubmit={submitSearch}>
+          <FontAwesomeIcon icon={faMagnifyingGlass} className="search-icon" aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Search products, categories and more"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            aria-label="Search products"
+          />
+          <button type="submit" aria-label="Submit search"><FontAwesomeIcon icon={faArrowRight} /></button>
+        </form>
 
-      <div className="iconbutton">
-        <div
-          style={iconstyle}
-          onClick={() => {
-            navigate("/user/cart");
-          }}
-          className="cart-button"
-        >
-          <FontAwesomeIcon icon={faCartShopping} className="cart-icon" />
-
-          <p style={{ margin: "4px" }}>Cart</p>
+        <div className="header-actions">
+          <div className="account-actions">
+            {userId ? (
+              <>
+                <button className="header-action account-action" onClick={() => navigate("/user/order-details")} type="button">
+                  <FontAwesomeIcon icon={faUser} /><span><small>WELCOME</small>{name || "My account"}</span>
+                </button>
+                <button className="header-text-button" onClick={logout} type="button">Sign out</button>
+              </>
+            ) : (
+              <button className="header-action account-action" onClick={() => navigate("/login")} type="button">
+                <FontAwesomeIcon icon={faUser} /><span><small>YOUR ACCOUNT</small>Sign in</span>
+              </button>
+            )}
+          </div>
+          <button className="header-action cart-button" onClick={() => navigate("/user/cart")} type="button">
+            <span className="cart-icon-wrap"><FontAwesomeIcon icon={faCartShopping} /><span className="cart-dot" /></span>
+            <span><small>READY WHEN YOU ARE</small>Cart</span>
+          </button>
         </div>
-        {userId ? (
-          <>
-            <div
-              style={iconstyle}
-              className="login-button"
-              onClick={() => {
-                navigate("/user/order-details");
-              }}
-            >
-              <FontAwesomeIcon icon={faUser} className="cart-icon" />
-              {name}
-            </div>
-            <div onClick={handleLogoutClick}>Logout</div>
-          </>
-        ) : (
-          <>
-            <div
-              style={iconstyle}
-              className="login-button"
-              onClick={handleLoginClick}
-            >
-              <FontAwesomeIcon icon={faUser} className="cart-icon" />
-              Login
-            </div>
-            <div
-              className="iconbutton"
-              onClick={() => {
-                navigate("/register-user");
-              }}
-            >
-              SignIn
-            </div>
-          </>
-        )}
       </div>
-    </nav>
+      <nav className="category-nav" aria-label="Shop categories">
+        {categories.map(([label, category], index) => (
+          <button
+            className={index === 0 ? "category-nav-active" : ""}
+            key={category}
+            onClick={() => navigate(category === "all" ? "/product" : `/product?category=${encodeURIComponent(category)}`)}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+        <button className="category-nav-deals" onClick={() => navigate("/product?sort=low")} type="button">Great finds <span>✦</span></button>
+      </nav>
+    </header>
   );
 };
 
