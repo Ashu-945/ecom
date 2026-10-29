@@ -93,9 +93,18 @@ const Cart = () => {
   };
 
   return (
-    <div className="cart-page">
+    <main className="cart-page">
+      <div className="cart-heading">
+        <div>
+          <span className="cart-eyebrow">YOUR EVERYDAY EDIT</span>
+          <h1>Your shopping bag</h1>
+          <p>Review your picks before they make their way to you.</p>
+        </div>
+        <Link className="continue-shopping" to="/product">Continue shopping <span aria-hidden="true">→</span></Link>
+      </div>
       {cartData.cartItems?.length > 0 ? (
-        <div className="cart-list">
+        <div className="cart-layout">
+        <section className="cart-list" aria-label="Items in your cart">
           {cartData.cartItems.map((item) => (
             <div className="cart-card" key={item.cartItemId}>
               <div className="cartproduct-image1">
@@ -108,7 +117,7 @@ const Cart = () => {
                 <h2 className="cartproduct-price">
                   Price: ₹ {item.product.price}
                 </h2>
-                <div className="increaseBtn">
+                <div className="increaseBtn" aria-label={`Quantity for ${item.product.name}`}>
                   <button onClick={() => increaseCount(item.product.productId)}>
                     +
                   </button>
@@ -137,18 +146,21 @@ const Cart = () => {
               </div>
             </div>
           ))}
+        </section>
         </div>
       ) : (
         <div className="empty-cart-message">
-          <h1>
-            Your cart is empty. <Link to="/">Shop Now</Link>
-          </h1>
+          <span aria-hidden="true">✦</span>
+          <h2>Your bag is waiting.</h2>
+          <p>Save something lovely for later.</p>
+          <Link to="/product">Explore products <span aria-hidden="true">→</span></Link>
         </div>
       )}
 
-      <div className="cart-details">
-        <h2>Total Cart Amount: </h2>
-        <h2>${"   " + totalAmount}</h2>
+      <aside className="cart-details">
+        <div className="summary-label">ORDER SUMMARY</div>
+        <h2>Total Cart Amount</h2>
+        <strong className="cart-total">₹ {Number(totalAmount || 0).toLocaleString("en-IN")}</strong>
         <div className="counter-box">
           <div>
             <button onClick={orderPlaced}>Order Placed</button>
@@ -171,8 +183,8 @@ const Cart = () => {
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </aside>
+    </main>
   );
 };
 
