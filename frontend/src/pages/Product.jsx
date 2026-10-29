@@ -146,12 +146,12 @@ const Product = () => {
                     <p className="product-description">{product.description || "A thoughtful pick for your everyday."}</p>
                     <div className="product-rating">
                       <FontAwesomeIcon icon={faStar} />
-                      <span>{product.reviews?.length ? Number(product.reviews[0].rating).toFixed(1) : "New find"}</span>
+                      <span>{product.reviewCount ? `${Number(product.averageRating).toFixed(1)} (${product.reviewCount})` : "New find"}</span>
                     </div>
                     <div className="product-bottom">
                       <strong className="product-price">{formatPrice(product.price)}</strong>
-                      <button className="product-add-button" onClick={() => addProductToCart(product.productId)} type="button" aria-label={`Add ${product.name} to cart`}>
-                        <span>Add to cart</span><FontAwesomeIcon icon={faArrowRight} />
+                      <button className="product-add-button" onClick={() => addProductToCart(product.productId)} type="button" aria-label={`Add ${product.name} to cart`} disabled={product.available === false}>
+                        <span>{product.available === false ? "Unavailable" : "Add to cart"}</span><FontAwesomeIcon icon={faArrowRight} />
                       </button>
                     </div>
                   </div>

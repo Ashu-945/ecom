@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import Ecom.Model.ShippingDetails;
 import Ecom.ModelDTO.ShippingDTO;
 import Ecom.Service.ShippingService;
 import lombok.RequiredArgsConstructor;
@@ -17,18 +16,18 @@ public class ShippingController {
     private final ShippingService shippingService;
 
     @PostMapping("/{orderId}/{shipperId}")
-    public ResponseEntity<ShippingDetails> setShippingDetails(@PathVariable Integer orderId,
+    public ResponseEntity<ShippingDTO> setShippingDetails(@PathVariable Integer orderId,
                                                               @PathVariable Integer shipperId,
-                                                              @Valid @RequestBody ShippingDetails shippingDetails) {
-        ShippingDetails savedShippingDetails = shippingService.setShippingDetails(orderId, shipperId,
+                                                              @Valid @RequestBody ShippingDTO shippingDetails) {
+        ShippingDTO savedShippingDetails = shippingService.setShippingDetails(orderId, shipperId,
                 shippingDetails);
         return new ResponseEntity<>(savedShippingDetails, HttpStatus.CREATED);
     }
 
     @PutMapping("/{shippingId}")
-    public ResponseEntity<ShippingDetails> updateShippingAddress(@PathVariable Integer shippingId,
+    public ResponseEntity<ShippingDTO> updateShippingAddress(@PathVariable Integer shippingId,
                                                                  @Valid @RequestBody ShippingDTO shippingDTO) {
-        ShippingDetails updatedShippingDetails = shippingService.updateShippingAddress(shippingId, shippingDTO);
+        ShippingDTO updatedShippingDetails = shippingService.updateShippingAddress(shippingId, shippingDTO);
         return new ResponseEntity<>(updatedShippingDetails, HttpStatus.OK);
     }
 

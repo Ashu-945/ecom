@@ -3,19 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../Router/api";
 import "../comp_css/Home.css";
 import Atta from "../picture/Atta_and_dals.avif";
-import Beauty from "../picture/Beauty_and_personal_care.avif";
-import HomeEssentials from "../picture/Home_essentials.avif";
 import KidsFashion from "../picture/kids_fashion.avif";
-import Laptops from "../picture/Laptops_and_Tablets.avif";
-import MenFashion from "../picture/men_fashion.avif";
 import Televisions from "../picture/Smart_Televisions.avif";
+import heroInterior from "../picture/commerce/interior.jpg";
+import heroWatch from "../picture/commerce/watch.jpg";
+import heroSneaker from "../picture/commerce/sneaker.jpg";
+import heroBag from "../picture/commerce/bag.jpg";
+import heroPerfume from "../picture/commerce/perfume.jpg";
 
 const categories = [
-  { name: "Electronics", value: "electronics", image: Laptops },
+  { name: "Electronics", value: "electronics", image: heroWatch },
   { name: "Fresh food", value: "vegetables", image: Atta },
-  { name: "Fashion", value: "fashion", image: MenFashion },
-  { name: "Home & living", value: "home", image: HomeEssentials },
-  { name: "Beauty", value: "beauty", image: Beauty },
+  { name: "Fashion", value: "fashion", image: heroSneaker },
+  { name: "Home & living", value: "home", image: heroInterior },
+  { name: "Beauty", value: "beauty", image: heroPerfume },
   { name: "TV & audio", value: "gadgets", image: Televisions },
   { name: "Kids", value: "kids", image: KidsFashion },
 ];
@@ -69,16 +70,13 @@ const Home = () => {
             <span>✦ Secure checkout</span>
           </div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="hero-orbit orbit-one" />
-          <div className="hero-orbit orbit-two" />
-          <div className="hero-product-mark">S</div>
-          <div className="hero-note">
-            <span>THE GOOD<br />STUFF</span>
-            <strong>starts here.</strong>
-          </div>
-          <span className="hero-sparkle sparkle-one">✳</span>
-          <span className="hero-sparkle sparkle-two">✦</span>
+        <div className="hero-art" aria-label="A curated mix of lifestyle products">
+          <img className="hero-interior" src={heroInterior} alt="Warm modern living room" />
+          <div className="hero-photo-card hero-card-watch"><img src={heroWatch} alt="Minimal wristwatch" /></div>
+          <div className="hero-photo-card hero-card-sneaker"><img src={heroSneaker} alt="Red everyday sneaker" /></div>
+          <div className="hero-photo-card hero-card-bag"><img src={heroBag} alt="Structured leather bag" /></div>
+          <div className="hero-photo-card hero-card-perfume"><img src={heroPerfume} alt="Glass perfume bottle" /></div>
+          <div className="hero-art-label"><span>THE EVERYDAY EDIT</span><strong>Good things<br />live here.</strong></div>
         </div>
         <div className="hero-counter"><strong>01</strong><span> / 03</span></div>
       </section>

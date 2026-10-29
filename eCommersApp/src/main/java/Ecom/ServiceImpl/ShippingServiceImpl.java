@@ -24,9 +24,9 @@ public class ShippingServiceImpl implements ShippingService {
 	private final ShipperRepository shipperRepository;
 
 	@Override
-	public ShippingDetails setShippingDetails(Integer orderId, Integer shipperId, ShippingDetails shippingDetails)
+	public ShippingDTO setShippingDetails(Integer orderId, Integer shipperId, ShippingDTO shippingDTO)
 	        throws ShippingException {
-	    if (shippingDetails == null)
+	    if (shippingDTO == null)
 	        throw new ShippingException("ShippingDetails cannot be null");
 
 	    Orders existingOrder = orderRepository.findById(orderId)
@@ -35,7 +35,12 @@ public class ShippingServiceImpl implements ShippingService {
 	    Shipper existingShipper = shipperRepository.findById(shipperId)
 	            .orElseThrow(() -> new ShippingException("Shipper not found"));
 
-	    // Save the ShippingDetails entity first
+	    ShippingDetails shippingDetails = new ShippingDetails();
+	    shippingDetails.setAddress(shippingDTO.getAddress());
+	    shippingDetails.setCity(shippingDTO.getCity());
+	    shippingDetails.setState(shippingDTO.getState());
+	    shippingDetails.setPostalCode(shippingDTO.getPostalCode());
+	    shippingDetails.setCountry(shippingDTO.getCountry());
 	    shippingDetails.setOrders(existingOrder);
 	    shippingDetails.setShipper(existingShipper);
 	    shippingDetails = shippingRepository.save(shippingDetails);
@@ -44,12 +49,12 @@ public class ShippingServiceImpl implements ShippingService {
 	    existingOrder.setShippingDetails(shippingDetails);
 	    orderRepository.save(existingOrder);
 
-	    return shippingDetails;
+	    return toDTO(shippingDetails);
 	}
 
 
 	@Override
-	public ShippingDetails updateShippingAddress(Integer shippingId, ShippingDTO shippingDTO) throws ShippingException {
+	public ShippingDTO updateShippingAddress(Integer shippingId, ShippingDTO shippingDTO) throws ShippingException {
 		ShippingDetails existing = shippingRepository.findById(shippingId)
 				.orElseThrow(() -> new ShippingException("Shipping detail not found"));
 
@@ -57,7 +62,7 @@ public class ShippingServiceImpl implements ShippingService {
 		existing.setAddress(shippingDTO.getAddress());
 		existing.setCity(shippingDTO.getCity());
 		existing.setPostalCode(shippingDTO.getPostalCode());
-		return shippingRepository.save(existing);
+		return toDTO(shippingRepository.save(existing));
 	}
 
 	@Override
@@ -67,6 +72,19 @@ public class ShippingServiceImpl implements ShippingService {
 
 		shippingRepository.delete(existing);
 
+	}
+
+	private ShippingDTO toDTO(ShippingDetails shipping) {
+		ShippingDTO dto = new ShippingDTO();
+		dto.setShippingId(shipping.getShippingId());
+		dto.setAddress(shipping.getAddress());
+		dto.setCity(shipping.getCity());
+		dto.setState(shipping.getState());
+		dto.setPostalCode(shipping.getPostalCode());
+		dto.setCountry(shipping.getCountry());
+		dto.setOrderId(shipping.getOrders() == null ? null : shipping.getOrders().getOrderId());
+		dto.setShipperId(shipping.getShipper() == null ? null : shipping.getShipper().getShipperId());
+		return dto;
 	}
 
 }

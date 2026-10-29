@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import Ecom.Model.Cart;
-import Ecom.Model.Product;
+import Ecom.ModelDTO.CartDTO;
+import Ecom.ModelDTO.UserResponseDTO;
 import Ecom.Service.CartService;
+import Ecom.Service.UserService;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/ecom/cart")
@@ -24,51 +26,58 @@ import Ecom.Service.CartService;
 public class CartController {
 
     private final CartService cartService;
+    private final UserService userService;
 
     @PostMapping("/add-product")
-    public ResponseEntity<Cart> addProductToCart(@RequestParam Integer userId, @RequestParam Integer productId) {
-        Cart cart = cartService.addProductToCart(userId, productId);
+    public ResponseEntity<CartDTO> addProductToCart(@RequestParam Integer userId, @RequestParam Integer productId, Authentication authentication) {
+        CartDTO cart = cartService.addProductToCart(userId, productId, requesterId(authentication));
         return new ResponseEntity<>(cart, HttpStatus.CREATED);
 
     }
 
     @PutMapping("/increase-productQty/{cartId}/{productId}")
-    public ResponseEntity<Cart> increaseProductQuantity(
+    public ResponseEntity<CartDTO> increaseProductQuantity(
             @PathVariable Integer cartId,
-            @PathVariable Integer productId
+            @PathVariable Integer productId,
+            Authentication authentication
 
     ) {
-        Cart cart = cartService.increaseProductQuantity(cartId, productId);
+        CartDTO cart = cartService.increaseProductQuantity(cartId, productId, requesterId(authentication));
         return ResponseEntity.ok(cart);
     }
 
     @PutMapping("/decrease-productQty/{cartId}/{productId}")
-    public ResponseEntity<Cart> decreaseProductQuantity(
+    public ResponseEntity<CartDTO> decreaseProductQuantity(
             @PathVariable Integer cartId,
-            @PathVariable Integer productId
+            @PathVariable Integer productId,
+            Authentication authentication
 
     ) {
-        Cart cart = cartService.decreaseProductQuantity(cartId, productId);
+        CartDTO cart = cartService.decreaseProductQuantity(cartId, productId, requesterId(authentication));
         return ResponseEntity.ok(cart);
     }
 
     @DeleteMapping("/remove-product/{cartId}/{productId}")
-    public ResponseEntity<String> removeProductFromCart(@PathVariable Integer cartId, @PathVariable Integer productId) {
-        cartService.removeProductFromCart(cartId, productId);
+    public ResponseEntity<String> removeProductFromCart(@PathVariable Integer cartId, @PathVariable Integer productId, Authentication authentication) {
+        cartService.removeProductFromCart(cartId, productId, requesterId(authentication));
         String msg = "Prodcut is removed from cart";
         return new ResponseEntity<String>(msg, HttpStatus.OK);
     }
 
     @DeleteMapping("/empty-Cart/{cartId}")
-    public ResponseEntity<String> removeAllProductFromCart(@PathVariable Integer cartId) {
-        cartService.removeAllProductFromCart(cartId);
+    public ResponseEntity<String> removeAllProductFromCart(@PathVariable Integer cartId, Authentication authentication) {
+        cartService.removeAllProductFromCart(cartId, requesterId(authentication));
         String msg = "All product Remove From cart";
         return new ResponseEntity<String>(msg, HttpStatus.OK);
     }
 
     @GetMapping("/products/{cartId}")
-    public ResponseEntity<Cart> getAllCartProducts(@PathVariable Integer cartId) {
-        Cart products = cartService.getAllCartProduct(cartId);
+    public ResponseEntity<CartDTO> getAllCartProducts(@PathVariable Integer cartId, Authentication authentication) {
+        CartDTO products = cartService.getAllCartProduct(cartId, requesterId(authentication));
         return ResponseEntity.ok(products);
+    }
+
+    private Integer requesterId(Authentication authentication) {
+        return userService.getUserByEmailId(authentication.getName()).getUserId();
     }
 }

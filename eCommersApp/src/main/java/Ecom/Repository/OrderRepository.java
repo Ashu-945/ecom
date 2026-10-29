@@ -1,6 +1,6 @@
 package Ecom.Repository;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,7 +17,7 @@ public interface OrderRepository extends JpaRepository<Orders, Integer> {
 	Orders findByIdAndCustomerId(@Param("orderId") Integer orderId, @Param("userId") Integer userId);
 
 	@Query("SELECT o FROM Orders o WHERE o.orderDate >= :date")
-	List<Orders> findByOrderDateGreaterThanEqual(Date date);
+	List<Orders> findByOrderDateGreaterThanEqual(LocalDateTime date);
 
 	@Query("SELECT o FROM Orders o WHERE  o.user.userId = :userId")
 	List<Orders> getAllOrderByUserId(@Param("userId") Integer userId);

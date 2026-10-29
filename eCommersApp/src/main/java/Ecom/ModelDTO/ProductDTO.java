@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ProductDTO {
 
+    private Integer productId;
+    private boolean available;
+
     @NotNull(message = "Product name is Mandatory ,can Not Be Null")
     @NotBlank(message = "Product name is Mandatory")
     private String name;
@@ -28,5 +31,8 @@ public class ProductDTO {
     @NotNull(message = "Product category_name is Mandatory ,can Not Be Null")
     @NotBlank(message = "Product category_name is Mandatory")
     private String category;
+
+    private Double averageRating;
+    private Integer reviewCount;
 
 }

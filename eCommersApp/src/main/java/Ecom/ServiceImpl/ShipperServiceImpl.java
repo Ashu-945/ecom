@@ -11,6 +11,7 @@ import Ecom.Model.Shipper;
 import Ecom.Repository.ShipperRepository;
 import Ecom.Repository.ShippingRepository;
 import Ecom.Service.ShipperService;
+import Ecom.ModelDTO.ShipperDTO;
 
 @Service
 public class ShipperServiceImpl implements ShipperService {
@@ -26,11 +27,14 @@ public class ShipperServiceImpl implements ShipperService {
 	}
 
 	@Override
-	public Shipper saveShipper(Shipper shipper) throws ShipperException {
+	public ShipperDTO saveShipper(ShipperDTO shipper) throws ShipperException {
 		if (shipper == null) {
 			throw new ShipperException("Shipper object cannot be null.");
 		}
-		return shipperRepository.save(shipper);
+		Shipper entity = new Shipper();
+		entity.setName(shipper.getName());
+		entity.setPhoneNumber(shipper.getPhoneNumber());
+		return toDTO(shipperRepository.save(entity));
 	}
 
 	@Override
@@ -44,17 +48,25 @@ public class ShipperServiceImpl implements ShipperService {
 	}
 
 	@Override
-	public Shipper getShipperById(Integer id) throws ShipperException {
-		return shipperRepository.findById(id)
+	public ShipperDTO getShipperById(Integer id) throws ShipperException {
+		return shipperRepository.findById(id).map(this::toDTO)
 				.orElseThrow(() -> new ShipperException("Shipper with ID " + id + " not found."));
 	}
 
 	@Override
-	public List<Shipper> getAllShippers() throws ShipperException {
+	public List<ShipperDTO> getAllShippers() throws ShipperException {
 		List<Shipper> shippers = shipperRepository.findAll();
 		if (shippers.isEmpty()) {
 			throw new ShipperException("No shippers found.");
 		}
-		return shippers;
+		return shippers.stream().map(this::toDTO).toList();
+	}
+
+	private ShipperDTO toDTO(Shipper shipper) {
+		ShipperDTO dto = new ShipperDTO();
+		dto.setShipperId(shipper.getShipperId());
+		dto.setName(shipper.getName());
+		dto.setPhoneNumber(shipper.getPhoneNumber());
+		return dto;
 	}
 }

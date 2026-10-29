@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import Ecom.Model.User;
 import Ecom.ModelDTO.AdminDTO;
 import Ecom.ModelDTO.UserDTO;
+import Ecom.ModelDTO.UserResponseDTO;
 import Ecom.Service.UserService;
 
 @RestController
@@ -25,15 +25,15 @@ public class AdminController {
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping
-    public ResponseEntity<User> addUser(@RequestBody AdminDTO user) {
+    public ResponseEntity<UserResponseDTO> addUser(@RequestBody AdminDTO user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        User addedUser = userService.addUserAdmin(user);
+        UserResponseDTO addedUser = userService.addUserAdmin(user);
         return ResponseEntity.ok(addedUser);
     }
 
     @PutMapping("/updatepassword/{adminId}")
-    public ResponseEntity<User> updateUserPassword(@PathVariable("adminId") Integer customerId, @RequestBody UserDTO userdto) {
-        User updatedUser = userService.changePassword(customerId, userdto);
+    public ResponseEntity<UserResponseDTO> updateUserPassword(@PathVariable("adminId") Integer customerId, @RequestBody UserDTO userdto) {
+        UserResponseDTO updatedUser = userService.changePassword(customerId, userdto);
         return ResponseEntity.ok(updatedUser);
     }
 

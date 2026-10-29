@@ -15,6 +15,7 @@ import Ecom.Model.User;
 import Ecom.ModelDTO.AdminDTO;
 import Ecom.ModelDTO.CustomerDTO;
 import Ecom.ModelDTO.UserDTO;
+import Ecom.ModelDTO.UserResponseDTO;
 import Ecom.Repository.UserRepository;
 import Ecom.Service.UserService;
 
@@ -32,19 +33,18 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public User getUserByEmailId(String emailId) throws UserException {
-		return userRepository.findByEmail(emailId).orElseThrow(() -> new UserException("User not found"));
+	public UserResponseDTO getUserByEmailId(String emailId) throws UserException {
+		return toResponseDTO(userRepository.findByEmail(emailId).orElseThrow(() -> new UserException("User not found")));
 
 	}
 
 	@Override
-	public User addUser(CustomerDTO customer) throws UserException {
+	public UserResponseDTO addUser(CustomerDTO customer) throws UserException {
 		if (customer == null)
 			throw new UserException("customer Can not be Null");
 		Optional<User> findByEmail = userRepository.findByEmail(customer.getEmail());
 		if (findByEmail.isPresent()) {
-			System.out.println("inside add user method");
-			throw new RuntimeException("Email alredy Register");
+			throw new UserException("Email is already registered");
 		}
 
 		User newCustomer = new User();
@@ -57,17 +57,16 @@ public class UserServiceImpl implements UserService {
 		newCustomer.setRegisterTime(LocalDateTime.now());
 		newCustomer.setUserAccountStatus(UserAccountStatus.ACTIVE);
 
-		return userRepository.save(newCustomer);
+		return toResponseDTO(userRepository.save(newCustomer));
 	}
 
 	@Override
-	public User addUserAdmin(AdminDTO customer) throws UserException {
+	public UserResponseDTO addUserAdmin(AdminDTO customer) throws UserException {
 		if (customer == null)
 			throw new UserException("admin Can not be Null");
 		Optional<User> findByEmail = userRepository.findByEmail(customer.getEmail());
 		if (findByEmail.isPresent()) {
-			System.out.println("inside add user method");
-			throw new RuntimeException("Email alredy Register");
+			throw new UserException("Email is already registered");
 		}
 		User newAdmin = new User();
 		newAdmin.setEmail(customer.getEmail());
@@ -79,14 +78,14 @@ public class UserServiceImpl implements UserService {
 		newAdmin.setRegisterTime(LocalDateTime.now());
 		newAdmin.setUserAccountStatus(UserAccountStatus.ACTIVE);
 
-		return userRepository.save(newAdmin);
+		return toResponseDTO(userRepository.save(newAdmin));
 	}
 
-	public User changePassword(Integer userId, UserDTO customer) throws UserException {
+	public UserResponseDTO changePassword(Integer userId, UserDTO customer) throws UserException {
 		User user = userRepository.findById(userId).orElseThrow(() -> new UserException("User not found"));
 		if (customer.getNewPassword().length() >= 5 && customer.getNewPassword().length() <= 10) {
 			user.updatePassword(customer.getNewPassword(), passwordEncoder);
-			return userRepository.save(user);
+			return toResponseDTO(userRepository.save(user));
 		} else {
 			throw new UserException("provide valid  password");
 		}
@@ -103,19 +102,42 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public User getUserDetails(Integer userId) throws UserException {
+	public UserResponseDTO getUserDetails(Integer userId) throws UserException {
 		User existingUser = userRepository.findById(userId).orElseThrow(() -> new UserException("User not found"));
-		return existingUser;
+		return toResponseDTO(existingUser);
 	}
 
 	@Override
-	public List<User> getAllUserDetails() throws UserException {
+	public List<UserResponseDTO> getAllUserDetails() throws UserException {
 
 		List<User> existingAllUser = userRepository.findAll();
 		if (existingAllUser.isEmpty()) {
-			new UserException("User list is Empty");
+			throw new UserException("User list is empty");
 		}
-		return existingAllUser;
+		return existingAllUser.stream().map(this::toResponseDTO).toList();
+	}
+
+	private UserResponseDTO toResponseDTO(User user) {
+		UserResponseDTO dto = new UserResponseDTO();
+		dto.setUserId(user.getUserId());
+		dto.setEmail(user.getEmail());
+		dto.setFirstName(user.getFirstName());
+		dto.setLastName(user.getLastName());
+		dto.setPhoneNumber(user.getPhoneNumber());
+		dto.setRole(user.getRole());
+		dto.setRegisterTime(user.getRegisterTime());
+		dto.setUserAccountStatus(user.getUserAccountStatus());
+		dto.setAddress(user.getAddress().stream().map(address -> {
+			Ecom.ModelDTO.AddressResponseDTO addressDTO = new Ecom.ModelDTO.AddressResponseDTO();
+			addressDTO.setAddressID(address.getAddressID());
+			addressDTO.setFlatNo(address.getFlatNo());
+			addressDTO.setStreet(address.getStreet());
+			addressDTO.setCity(address.getCity());
+			addressDTO.setZipCode(address.getZipCode());
+			addressDTO.setState(address.getState());
+			return addressDTO;
+		}).toList());
+		return dto;
 	}
 
 	

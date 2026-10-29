@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../Router/api";
 import "../comp_css/Cart.css";
@@ -26,7 +26,7 @@ const Cart = () => {
     apiCallOrderPlaced();
     
   };
-  const fetchCartData = () => {
+  const fetchCartData = useCallback(() => {
     api
       .get(`/ecom/cart/products/${cartId}`)
       .then((response) => {
@@ -36,17 +36,17 @@ const Cart = () => {
       .catch((error) => {
         console.error("Error fetching data from the API: ", error);
       });
-  };
+  }, [cartId]);
 
   useEffect(() => {
     document.title = "Ecommerse | Cart";
     fetchCartData();
-  }, [cartId, totalAmount]);
+  }, [fetchCartData]);
   const emptyCart = () => {
     api
       .delete(`/ecom/cart/empty-Cart/${cartId}`)
       .then((response) => {
-        setTotalAmount(response.data.toalAmout);
+        setTotalAmount(0);
         alert("All cart Item remove");
         fetchCartData();
       })
@@ -81,7 +81,7 @@ const Cart = () => {
 
   const decreaseCount = (productid) => {
     api
-      .put(`ecom/cart/decrease-productQty/${cartId}/${productid}`)
+      .put(`/ecom/cart/decrease-productQty/${cartId}/${productid}`)
       .then((response) => {
         setTotalAmount(response.data.totalAmount);
         fetchCartData();

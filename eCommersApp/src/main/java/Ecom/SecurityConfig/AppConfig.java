@@ -32,9 +32,10 @@ public class AppConfig {
 
                             CorsConfiguration cfg = new CorsConfiguration();
 
-                            cfg.setAllowedOriginPatterns(Collections.singletonList("*"));
-                            cfg.setAllowedOriginPatterns(Collections.singletonList("https://eccomers96.netlify.app/"));
-                            cfg.setAllowedOriginPatterns(Collections.singletonList("http://localhost:3000"));
+                            cfg.setAllowedOriginPatterns(Arrays.asList(
+                                    "https://eccomers96.netlify.app",
+                                    "http://localhost:3000",
+                                    "http://127.0.0.1:3000"));
                             cfg.setAllowedMethods(Collections.singletonList("*"));
         
                             cfg.setAllowCredentials(true);
@@ -48,20 +49,20 @@ public class AppConfig {
                 })
                 .authorizeHttpRequests(auth -> {
                     auth
-                            .requestMatchers(HttpMethod.POST, "/ecom/admin").permitAll()
                             .requestMatchers(HttpMethod.POST, "/ecom/customers").permitAll()
-                            .requestMatchers(HttpMethod.DELETE, "/ecom/orders/users/**").permitAll()
-                            .requestMatchers(HttpMethod.GET, "/ecom/signIn", "/ecom/product-reviews/**","/ecom/products/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/ecom/product-reviews/**","/ecom/products/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/ecom/orders/all", "/ecom/orders/date/**", "/ecom/customers/get-all-customer")
+                            .hasRole("ADMIN")
 
                             .requestMatchers(
                                     HttpMethod.POST,
-                                    "/ecom/product/**",
+                                    "/ecom/admin",
+                                    "/ecom/products/**",
                                     "/ecom/order-shippers/**"
 
                             ).hasRole("ADMIN")
                             .requestMatchers(
                                     HttpMethod.POST,
-                                    "/ecom/product/**",
                                     "/ecom/product-reviews/**",
                                     "/ecom/customer-addresses/**",
                                     "/ecom/cart/**",
@@ -87,17 +88,15 @@ public class AppConfig {
                                     HttpMethod.DELETE,
                                     "/ecom/products/**",
                                     "/ecom/product-reviews/**",
-                                    "/ecom/customer-addresses/delete/**",
-//                                    "/ecom/orders/users/**",
-                                    "/ecom/order-shipping/**",
                                     "/ecom/order-shippers/**"
-
                             ).hasRole("ADMIN")
                             .requestMatchers(
                                     HttpMethod.DELETE,
+                                    "/ecom/orders/users/**",
+                                    "/ecom/customer-addresses/delete/**",
+                                    "/ecom/order-shipping/**",
                                     "/ecom/cart/remove-product/**"
-//                                    "/ecom/orders/users/**"
-                            ).hasRole("USER")
+                            ).hasAnyRole("ADMIN", "USER")
 
                             .requestMatchers(
                                     HttpMethod.GET,

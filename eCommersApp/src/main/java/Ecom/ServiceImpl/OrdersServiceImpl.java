@@ -2,8 +2,9 @@ package Ecom.ServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,10 @@ import Ecom.Model.OrderItem;
 import Ecom.Model.Orders;
 import Ecom.Model.User;
 import Ecom.ModelDTO.OrdersDTO;
+import Ecom.ModelDTO.OrderItemDTO;
+import Ecom.ModelDTO.ProductDTO;
+import Ecom.ModelDTO.UserResponseDTO;
+import Ecom.ModelDTO.PaymentDTO;
 import Ecom.Repository.CartItemRepository;
 import Ecom.Repository.CartRepository;
 import Ecom.Repository.OrderItemRepository;
@@ -28,6 +33,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@jakarta.transaction.Transactional
 public class OrdersServiceImpl implements OrdersService {
 
     private final OrderRepository orderRepository;
@@ -41,12 +47,14 @@ public class OrdersServiceImpl implements OrdersService {
     private final CartRepository cartRepository;
 
     @Override
-    public OrdersDTO placeOrder(Integer userId) throws OrdersException {
+    public OrdersDTO placeOrder(Integer userId,Integer requesterUserId) throws OrdersException {
+        if (requesterUserId != null && !requesterUserId.equals(userId))
+            throw new OrdersException("You may only place an order for your own account.");
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException("User Not Found In Database"));
 
         Cart usercart = existingUser.getCart();
-        if(usercart.getTotalAmount()==0){
+        if(usercart == null || usercart.getTotalAmount() == null || usercart.getTotalAmount() <= 0){
             throw new OrdersException("Add item To the cart first.......");
         }
         Integer cartId = usercart.getCartId();
@@ -86,75 +94,135 @@ public class OrdersServiceImpl implements OrdersService {
         cartItemRepository.removeAllProductFromCart(cartId);
         cartRepository.save(usercart);
 
-        OrdersDTO orderdata=new OrdersDTO();
-        orderdata.setOrderId(newOrder.getOrderId());
-        orderdata.setOrderAmount(newOrder.getTotalAmount());
-        orderdata.setStatus("Pending");
-        orderdata.setPaymentStatus("Pending");
-        orderdata.setOrderDate("Currebt Date");
-        return orderdata;
+        return toDTO(newOrder);
 
     }
 
     @Transactional
-    public Orders getOrdersDetails(Integer orderId) throws OrdersException {
+    public OrdersDTO getOrdersDetails(Integer orderId,Integer requesterUserId) throws OrdersException {
 
         Orders order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrdersException("Order not found in the database."));
-        return order;
+        if (requesterUserId != null && (order.getUser() == null ||
+                !requesterUserId.equals(order.getUser().getUserId())))
+            throw new OrdersException("You may only view your own orders.");
+        return toDTO(order);
     }
 
     @Override
-    public List<Orders> getAllUserOrder(Integer userId) throws OrdersException {
+    public List<OrdersDTO> getAllUserOrder(Integer userId,Integer requesterUserId) throws OrdersException {
+        if (requesterUserId != null && !requesterUserId.equals(userId))
+            throw new OrdersException("You may only view your own orders.");
         try {
             List<Orders> orders = orderRepository.getAllOrderByUserId(userId);
             if (orders.isEmpty()) {
                 throw new OrdersException("No orders found for the user in the database.");
             }
-            return orders;
+            return orders.stream().map(this::toDTO).collect(Collectors.toList());
         } catch (Exception e) {
             throw new OrdersException("Failed to fetch orders for the user: " + e.getMessage());
         }
     }
 
     @Override
-    public List<Orders> viewAllOrders() throws OrdersException {
+    public List<OrdersDTO> viewAllOrders() throws OrdersException {
 
         List<Orders> orders = orderRepository.findAll();
 
         if (orders.isEmpty()) {
             throw new OrdersException("No orders found in the database.");
         }
-        return orders;
+        return orders.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
     @Override
-    public List<Orders> viewAllOrderByDate(Date date) throws OrdersException {
+    public List<OrdersDTO> viewAllOrderByDate(LocalDate date) throws OrdersException {
 
-        List<Orders> orders = orderRepository.findByOrderDateGreaterThanEqual(date);
+        List<Orders> orders = orderRepository.findByOrderDateGreaterThanEqual(date.atStartOfDay());
 
         if (orders.isEmpty()) {
             throw new OrdersException("No orders found for the given date.");
         }
 
-        return orders;
+        return orders.stream().map(this::toDTO).collect(Collectors.toList());
 
     }
 
     @Override
-    public void deleteOrders(Integer userId, Integer Orderid) throws OrdersException {
+    public void deleteOrders(Integer userId, Integer Orderid,Integer requesterUserId) throws OrdersException {
+        if (requesterUserId != null && !requesterUserId.equals(userId))
+            throw new OrdersException("You may only cancel your own orders.");
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException("User Not Found In Database"));
         Orders existingOrder = orderRepository.findById(Orderid)
                 .orElseThrow(() -> new UserException("order Not Found In Database"));
 
+        if (existingOrder.getUser() == null || !existingOrder.getUser().getUserId().equals(userId)) {
+            throw new OrdersException("Order does not belong to the given user.");
+        }
+
         orderRepository.delete(existingOrder);
     }
 
     @Override
-    public Orders updateOrders(Integer ordersid, OrdersDTO orderDTo) throws OrdersException {
+    public OrdersDTO updateOrders(Integer ordersid, OrdersDTO orderDTo) throws OrdersException {
+        Orders order = orderRepository.findById(ordersid)
+                .orElseThrow(() -> new OrdersException("Order not found in the database."));
+        try {
+            order.setStatus(OrderStatus.valueOf(orderDTo.getStatus().toUpperCase()));
+        } catch (RuntimeException ex) {
+            throw new OrdersException("A valid order status is required.");
+        }
+        return toDTO(orderRepository.save(order));
+    }
 
-        return null;
+    private OrdersDTO toDTO(Orders order) {
+        OrdersDTO dto = new OrdersDTO();
+        dto.setOrderId(order.getOrderId());
+        dto.setStatus(order.getStatus() == null ? null : order.getStatus().name());
+        dto.setOrderDate(order.getOrderDate() == null ? null : order.getOrderDate().toString());
+        dto.setOrderAmount(order.getTotalAmount());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setPaymentStatus(order.getPayment() == null || order.getPayment().getPaymentStatus() == null
+                ? "PENDING" : order.getPayment().getPaymentStatus().name());
+        dto.setUserId(order.getUser() == null ? null : order.getUser().getUserId());
+        if (order.getUser() != null) {
+            UserResponseDTO userDTO = new UserResponseDTO();
+            userDTO.setUserId(order.getUser().getUserId());
+            userDTO.setEmail(order.getUser().getEmail());
+            userDTO.setFirstName(order.getUser().getFirstName());
+            userDTO.setLastName(order.getUser().getLastName());
+            userDTO.setPhoneNumber(order.getUser().getPhoneNumber());
+            dto.setUser(userDTO);
+        }
+        if (order.getPayment() != null) {
+            PaymentDTO paymentDTO = new PaymentDTO();
+            paymentDTO.setPaymentId(order.getPayment().getPaymentId());
+            paymentDTO.setOrderId(order.getOrderId());
+            paymentDTO.setUserId(order.getUser() == null ? null : order.getUser().getUserId());
+            paymentDTO.setPaymentDate(order.getPayment().getPaymentDate());
+            paymentDTO.setPaymentAmount(order.getPayment().getPaymentAmount());
+            paymentDTO.setPaymentMethod(order.getPayment().getPaymentMethod());
+            paymentDTO.setPaymentStatus(order.getPayment().getPaymentStatus());
+            dto.setPayment(paymentDTO);
+        }
+        dto.setOrderItem(order.getOrderItem().stream().map(item -> {
+            OrderItemDTO itemDTO = new OrderItemDTO();
+            itemDTO.setOrderItemId(item.getOrderItemId());
+            itemDTO.setProductId(item.getProduct().getProductId());
+            itemDTO.setQuantity(item.getQuantity());
+            itemDTO.setPrice(java.math.BigDecimal.valueOf(item.getProduct().getPrice()));
+            ProductDTO productDTO = new ProductDTO();
+            productDTO.setProductId(item.getProduct().getProductId());
+            productDTO.setName(item.getProduct().getName());
+            productDTO.setImageUrl(item.getProduct().getImageUrl());
+            productDTO.setDescription(item.getProduct().getDescription());
+            productDTO.setPrice(item.getProduct().getPrice());
+            productDTO.setCategory(item.getProduct().getCategory());
+            itemDTO.setProduct(productDTO);
+            return itemDTO;
+        }).collect(Collectors.toList()));
+        return dto;
     }
 
 }

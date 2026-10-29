@@ -2,6 +2,8 @@ package Ecom.ServiceImpl;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +24,15 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
 
     @Override
-    public Product addProduct(Product product) throws ProductException {
-        if (product == null)
-            throw new ProductException("Product Can not be Null");
-        return productRepository.save(product);
+    public ProductDTO addProduct(ProductDTO product) throws ProductException {
+        if (product == null) throw new ProductException("Product cannot be null");
+        Product entity = new Product();
+        copyToEntity(product, entity);
+        return toDTO(productRepository.save(entity));
     }
 
     @Override
-    public Product updateProduct(Integer productId, ProductDTO updatedProduct) throws ProductException {
+    public ProductDTO updateProduct(Integer productId, ProductDTO updatedProduct) throws ProductException {
 
         Optional<Product> product = productRepository.findById(productId);
         if (product.isEmpty()) {
@@ -37,32 +40,26 @@ public class ProductServiceImpl implements ProductService {
         }
         Product existingProduct = product.get();
 
-        // Update the existing product's properties with the new data
-        System.out.println("before");
-        existingProduct.setName(updatedProduct.getName());
-        existingProduct.setCategory(updatedProduct.getCategory());
-        existingProduct.setPrice(updatedProduct.getPrice());
-        existingProduct.setImageUrl(updatedProduct.getImageUrl());
-        existingProduct.setDescription(updatedProduct.getDescription());
-        System.out.println("after");
-        productRepository.save(existingProduct);
-        return existingProduct;
+        copyToEntity(updatedProduct, existingProduct);
+        return toDTO(productRepository.save(existingProduct));
     }
 
     @Override
-    public List<Product> getProductByName(String name) throws ProductException {
+    public List<ProductDTO> getProductByName(String name) throws ProductException {
 
         List<Product> existProductByName = productRepository.findByName(name);
         if (existProductByName.isEmpty()) {
             throw new ProductException("Product Not found with name " + name);
         }
-        return existProductByName;
+        return existProductByName.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
     @Override
-    public List<Product> getAllProduct(String keyword, String sortDirection, String sortBy) throws ProductException {
+    public List<ProductDTO> getAllProduct(String keyword, String sortDirection, String sortBy) throws ProductException {
 
-        Sort sort = Sort.by(sortDirection.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC,sortBy);
+        Set<String> allowedSortFields = Set.of("name", "price", "category", "productId");
+        String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "price";
+        Sort sort = Sort.by("desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC, safeSortBy);
 
         List<Product> products;
 
@@ -76,18 +73,18 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductException("Product List Empty");
         }
 
-        return products;
+        return products.stream().map(this::toDTO).collect(Collectors.toList());
 
     }
 
     @Override
-    public List<Product> getProductByCategory(String category) throws ProductException {
+    public List<ProductDTO> getProductByCategory(String category) throws ProductException {
         // Retrieve products by category from the database
         List<Product> allproductCategoryName = productRepository.getProductCategoryName(category);
         if (allproductCategoryName.isEmpty())
             throw new ProductException("Product with category Name " + category + " not found.");
 
-        return allproductCategoryName;
+        return allproductCategoryName.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
 
@@ -101,10 +98,35 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product getSingleProduct(Integer productId) {
+    public ProductDTO getSingleProduct(Integer productId) {
 
         Product single = productRepository.findById(productId).orElseThrow(() -> new ProductException("Product not found"));
-        return single;
+        return toDTO(single);
+    }
+
+    private void copyToEntity(ProductDTO source, Product target) {
+        target.setName(source.getName());
+        target.setCategory(source.getCategory());
+        target.setPrice(source.getPrice());
+        target.setImageUrl(source.getImageUrl());
+        target.setDescription(source.getDescription());
+    }
+
+    private ProductDTO toDTO(Product product) {
+        ProductDTO dto = new ProductDTO();
+        dto.setProductId(product.getProductId());
+        dto.setName(product.getName());
+        dto.setImageUrl(product.getImageUrl());
+        dto.setAvailable(product.isAvailable());
+        dto.setDescription(product.getDescription());
+        dto.setPrice(product.getPrice());
+        dto.setCategory(product.getCategory());
+        int reviewCount = product.getReviews() == null ? 0 : product.getReviews().size();
+        dto.setReviewCount(reviewCount);
+        dto.setAverageRating(reviewCount == 0 ? null : product.getReviews().stream()
+                .mapToInt(review -> review.getRating() == null ? 0 : review.getRating())
+                .average().orElse(0));
+        return dto;
     }
 
 

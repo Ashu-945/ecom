@@ -16,6 +16,7 @@ import Ecom.Repository.ProductRepository;
 import Ecom.Repository.ReviewRepository;
 import Ecom.Repository.UserRepository;
 import Ecom.Service.ReviewService;
+import Ecom.ModelDTO.ReviewDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -28,13 +29,17 @@ public class ReviewServiceImpl implements ReviewService {
 	private final UserRepository userRepository;
 
 	@Override
-	public Review addReviewToProduct(Integer productId, Integer userId, Review review) throws ReviewException {
+	public ReviewDTO addReviewToProduct(Integer productId, Integer userId, ReviewDTO reviewDTO) throws ReviewException {
 		Product existingProduct = productRepository.findById(productId)
 				.orElseThrow(() -> new ReviewException("Product Not Found"));
 
 		User existingUser = userRepository.findById(userId)
 				.orElseThrow(() -> new ReviewException("User Not Found In Database"));
 
+		Review review = new Review();
+		review.setComment(reviewDTO.getComment());
+		review.setRating(reviewDTO.getRating());
+		review.setCreatedAt(java.time.LocalDateTime.now());
 		existingUser.getReviews().add(review);
 		review.setUser(existingUser);
 		existingProduct.getReviews().add(review);
@@ -42,17 +47,17 @@ public class ReviewServiceImpl implements ReviewService {
 		userRepository.save(existingUser);
 		productRepository.save(existingProduct);
 
-		return reviewRepository.save(review);
+		return toDTO(reviewRepository.save(review));
 	}
 
 	@Override
-	public Review updateReviewToProduct(Integer reviewId, Review review) throws ReviewException {
+	public ReviewDTO updateReviewToProduct(Integer reviewId, ReviewDTO reviewDTO) throws ReviewException {
 		Review existingReview = reviewRepository.findById(reviewId)
 				.orElseThrow(() -> new ReviewException("Review With Id "+reviewId+"Not Found In DataBase"));
 
-		existingReview.setComment(review.getComment());
-		existingReview.setRating(review.getRating());
-		return existingReview;
+		existingReview.setComment(reviewDTO.getComment());
+		existingReview.setRating(reviewDTO.getRating());
+		return toDTO(reviewRepository.save(existingReview));
 	}
 
 	@Override
@@ -65,7 +70,7 @@ public class ReviewServiceImpl implements ReviewService {
 	}
 
 	@Override
-	public List<Review> getAllReviewOfProduct(Integer productId) throws ReviewException {
+	public List<ReviewDTO> getAllReviewOfProduct(Integer productId) throws ReviewException {
 		Product existingProduct = productRepository.findById(productId)
 				.orElseThrow(() -> new ReviewException("Invalid Product id"));
 		
@@ -73,7 +78,19 @@ public class ReviewServiceImpl implements ReviewService {
 		if(allReviewsByProductId.isEmpty()) { 
 			 throw new ReviewException ("No Rewiew Of Given Product is Available");
 		}
-		return allReviewsByProductId;
+		return allReviewsByProductId.stream().map(this::toDTO).toList();
+	}
+
+	private ReviewDTO toDTO(Review review) {
+		ReviewDTO dto = new ReviewDTO();
+		dto.setReviewId(review.getReviewId());
+		dto.setRating(review.getRating());
+		dto.setComment(review.getComment());
+		dto.setCreatedAt(review.getCreatedAt());
+		dto.setProductId(review.getProduct() == null ? null : review.getProduct().getProductId());
+		dto.setUserId(review.getUser() == null ? null : review.getUser().getUserId());
+		dto.setReviewerName(review.getUser() == null ? "Customer" : review.getUser().getFirstName());
+		return dto;
 	}
 
 }
