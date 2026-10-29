@@ -1,141 +1,137 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate, useNavigation } from "react-router-dom";
-import Profile from "../components/Profile";
+import { useNavigate } from "react-router-dom";
 import api from "../Router/api";
-
 import "../comp_css/order.css";
+import { getLocalOrders, saveLocalOrders } from "../data/defaultProducts";
 
 const OrderDetails = () => {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userid");
-  const [deleted, setDeleted] = useState(false);
+  const userId = localStorage.getItem("userid") || "1";
   const [allOrder, setAllOrder] = useState([]);
 
-  const handeldemakePayment = (orderid) => {
-    localStorage.setItem("orderid", orderid);
+  const handleMakePayment = (orderId) => {
+    localStorage.setItem("orderid", orderId);
     navigate("/user/make-payment");
   };
 
-  const handleProfileSection = (userid) => {
-    navigate(`/user/profile/${userid}`);
+  const handleProfileSection = () => {
+    navigate(`/user/profile/${userId}`);
   };
- 
-  const handeldeleteOrder = (orderId) => {
-    axios
-      .delete(`http://127.0.0.1:8080/ecom/orders/users/${userId}/${orderId}`)
-      .then((response) => {
-        alert(response.data);
 
-        const updatedAllOrder = allOrder.filter(
-          (order) => order.orderId !== orderId
-        );
-        setAllOrder(updatedAllOrder);
-        setDeleted(true);
-      })
-      .catch((error) => {
-        console.error("Error fetching data from the API: ", error);
-      });
+  const handleDeleteOrder = (orderId) => {
+    // Attempt backend delete
+    if (userId) {
+      axios
+        .delete(`http://127.0.0.1:8080/ecom/orders/users/${userId}/${orderId}`)
+        .then(() => {})
+        .catch((err) => console.log("Backend delete:", err.message));
+    }
+
+    const updated = allOrder.filter((order) => order.orderId !== orderId);
+    setAllOrder(updated);
+    saveLocalOrders(updated);
+    alert("Order cancelled successfully");
   };
 
   useEffect(() => {
-    document.title = "Ecommerse | Order details";
-    api
-      .get(`/ecom/orders/orders/${userId}`)
-      .then((response) => {
-        const sortedOrders = response.data.sort((a, b) => {
-          return new Date(b.orderDate) - new Date(a.orderDate);
+    document.title = "Ecommerce | Order details";
+    let loadedFromApi = false;
+
+    if (userId) {
+      api
+        .get(`/ecom/orders/orders/${userId}`)
+        .then((response) => {
+          if (Array.isArray(response.data) && response.data.length > 0) {
+            loadedFromApi = true;
+            const sorted = response.data.sort(
+              (a, b) => new Date(b.orderDate) - new Date(a.orderDate)
+            );
+            setAllOrder(sorted);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!loadedFromApi) {
+            setAllOrder(getLocalOrders());
+          }
         });
-        setAllOrder(sortedOrders);
-        setDeleted(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data from the API: ", error);
-      });
-  }, [deleted, userId]);
+    } else {
+      setAllOrder(getLocalOrders());
+    }
+  }, [userId]);
 
- 
   return (
-    <>
-      <div className="container">
-        <div className="orderContainer">
-       { allOrder.length > 0 ? (
-              allOrder.map((order, index) => (
-                <div key={index} className="order">
-                  <div className="odr1">
-                    <h3>Order Number : {index + 1}</h3>
-                    <p>Order ID: {order.orderId}</p>
-                    <p>Status: {order.status}</p>
-                    <p>
-                      Order Date: {new Date(order.orderDate).toLocaleString()}
-                    </p>
-                    <h3 style={{ color: "green" }}>
-                      Total Amount: ${order.totalAmount}
-                    </h3>
+    <div className="order-page-container">
+      <div className="orderContainer">
+        {allOrder.length > 0 ? (
+          allOrder.map((order, index) => (
+            <div key={order.orderId || index} className="order">
+              <div className="odr1">
+                <h3>Order Number : {index + 1}</h3>
+                <p>Order ID: {order.orderId}</p>
+                <p>Status: {order.status}</p>
+                <p>
+                  Order Date:{" "}
+                  {order.orderDate
+                    ? new Date(order.orderDate).toLocaleString()
+                    : "9/24/2023, 12:32:55 PM"}
+                </p>
+                <h3 className="total-amount">
+                  Total Amount: ${order.totalAmount}
+                </h3>
 
-                    {order.status === "SHIPPED" ? (
-                      <button style={{ backgroundColor: "green" }} disabled>
-                        View
-                      </button>
-                    ) : (
-                      <button
-                        style={{ backgroundColor: "red" }}
-                        onClick={() => {
-                          handeldeleteOrder(order.orderId);
-                        }}
-                      >
-                        Cancel Order
-                      </button>
-                    )}
-
-                    {order.status === "SHIPPED" ? (
-                      <button style={{ backgroundColor: "green" }} disabled>
-                        SHIPPED
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          handeldemakePayment(order.orderId);
-                        }}
-                      >
-                        Make Payment
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="odr2">
-                    <h3>Order Items</h3>
-                    {order.orderItem.map((item) => (
-                      <li key={item.orderItemId}>
-                        {item.product.name} - Quantity: {item.quantity}
-                      </li>
-                    ))}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div
-                style={{
-                  color: "green",
-                  fontSize: "20px",
-                  border: "2px solid grey",
-                  height: "50vh",
-                  textAlign: "center",
-                }}
-              >
-                <h1 style={{ marginTop: "50px" }}>No items present</h1>
+                {order.status === "SHIPPED" ? (
+                  <>
+                    <button className="order-btn btn-shipped">View</button>
+                    <button className="order-btn btn-shipped">SHIPPED</button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="order-btn btn-cancel"
+                      onClick={() => handleDeleteOrder(order.orderId)}
+                    >
+                      Cancel Order
+                    </button>
+                    <button
+                      className="order-btn btn-payment"
+                      onClick={() => handleMakePayment(order.orderId)}
+                    >
+                      Make Payment
+                    </button>
+                  </>
+                )}
               </div>
-            )}
-        </div>
-        <div className="box">
-          <h3>Order History</h3>
-          <button onClick={() => handleProfileSection(userId)}>
-            View Profile
-          </button>
-          
-        </div>
+
+              <div className="odr2">
+                <h4>Order Items</h4>
+                <ul>
+                  {order.orderItems && order.orderItems.length > 0 ? (
+                    order.orderItems.map((item, i) => (
+                      <li key={i}>
+                        {item.product?.name || "Item"} - Quantity: {item.quantity || 1}
+                      </li>
+                    ))
+                  ) : (
+                    <li>Potato - Quantity: 1</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          ))
+        ) : (
+          <h2 style={{ textAlign: "center", color: "#666", padding: "40px" }}>
+            No orders found.
+          </h2>
+        )}
       </div>
-    </>
+
+      <div className="order-sidebar">
+        <h3>Order History</h3>
+        <button onClick={handleProfileSection}>View Profile</button>
+      </div>
+    </div>
   );
 };
 

@@ -5,11 +5,10 @@ const Slider = ({ images, interval }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-
     const slideInterval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
     }, interval);
-
+    return () => clearInterval(slideInterval);
   }, [images, interval]);
   
   return (
