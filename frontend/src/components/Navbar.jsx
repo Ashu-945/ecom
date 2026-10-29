@@ -4,9 +4,11 @@ import "../comp_css/Navbar.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight,
+  faBars,
   faCartShopping,
   faMagnifyingGlass,
   faUser,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
 const categories = [
@@ -21,6 +23,7 @@ const categories = [
 const Navbar = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const userId = localStorage.getItem("userid");
   const name = localStorage.getItem("name");
 
@@ -37,6 +40,11 @@ const Navbar = () => {
     navigate("/");
   };
 
+  const goTo = (path) => {
+    setMenuOpen(false);
+    navigate(path);
+  };
+
   return (
     <header className="store-header">
       <div className="announcement-bar">
@@ -44,6 +52,9 @@ const Navbar = () => {
         <span>Thoughtful picks. Easy shopping. <FontAwesomeIcon icon={faArrowRight} /></span>
       </div>
       <div className="navbar">
+        <button className="mobile-menu-button" onClick={() => setMenuOpen((open) => !open)} type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen}>
+          <FontAwesomeIcon icon={menuOpen ? faXmark : faBars} />
+        </button>
         <button className="logo" onClick={() => navigate("/")} type="button" aria-label="ShopEase home">
           <span className="logo-mark">s</span>
           <span>shop<span className="logo-accent">ease</span><small>EVERYDAY, ELEVATED</small></span>
@@ -95,6 +106,15 @@ const Navbar = () => {
         ))}
         <button className="category-nav-deals" onClick={() => navigate("/product?sort=low")} type="button">Great finds <span>✦</span></button>
       </nav>
+      <div className={`mobile-menu ${menuOpen ? "mobile-menu-open" : ""}`} aria-hidden={!menuOpen}>
+        <div className="mobile-menu-links">
+          <button type="button" onClick={() => goTo("/product")}>Shop all <span>→</span></button>
+          {categories.slice(1).map(([label, category]) => (
+            <button type="button" key={category} onClick={() => goTo(`/product?category=${encodeURIComponent(category)}`)}>{label} <span>→</span></button>
+          ))}
+        </div>
+        <p>Thoughtful picks for everyday living.</p>
+      </div>
     </header>
   );
 };
